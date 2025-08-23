@@ -234,7 +234,10 @@ class StreamingService:
                 if self._is_connection_alive:
                     logging.info("Attempting to reconnect...")
                     self._attempt_reconnect()
-            time.sleep(self._KEEP_ALIVE_INTERVAL)
+            for _ in range(int(self._KEEP_ALIVE_INTERVAL * 10)):
+                if not self._is_connection_alive:
+                    break
+                time.sleep(0.1)
 
     def _watch_user_input(self):
         """Monitors and processes user input in a separate thread while the stream is active.
