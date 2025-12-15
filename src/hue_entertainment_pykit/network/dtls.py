@@ -12,6 +12,7 @@ communication.
 Classes:
 - Dtls: Handles DTLS connections with Philips Hue Bridges using pre-shared keys.
 """
+
 import errno
 import logging
 import os
@@ -22,9 +23,12 @@ from typing import Tuple, List
 from mbedtls._tls import HandshakeStep, WantReadError, WantWriteError
 from mbedtls.tls import TLSWrappedSocket, DTLSConfiguration, ClientContext
 
-from models.bridge import Bridge
+from ..models.bridge import Bridge
 
-from exceptions.dtls_handshake_exception import DTLSHandshakeException
+from ..exceptions.dtls_handshake_exception import DTLSHandshakeException
+
+
+logger = logging.getLogger(__name__)
 
 
 class Dtls:
@@ -114,7 +118,7 @@ class Dtls:
         """
 
         if self._dtls_socket is None:
-            logging.info("Creating DTLS socket and context")
+            logger.info("Creating DTLS socket and context")
             config = DTLSConfiguration(
                 pre_shared_key=(self._psk_identity, self._psk_key),
                 ciphers=self._ciphers,
@@ -135,9 +139,9 @@ class Dtls:
         """
 
         self._create_dtls_socket()
-        logging.info("Starting DTLS handshake")
+        logger.info("Starting DTLS handshake")
         self._dtls_socket.do_handshake()
-        logging.info("DTLS handshake established")
+        logger.info("DTLS handshake established")
 
     def close_socket(self):
         """
@@ -214,7 +218,9 @@ class Dtls:
                     if address is None:
                         data = self._socket.recv(TLSWrappedSocket.CHUNK_SIZE, flags)
                     else:
-                        data, addr = self._socket.recvfrom(TLSWrappedSocket.CHUNK_SIZE, flags)
+                        data, addr = self._socket.recvfrom(
+                            TLSWrappedSocket.CHUNK_SIZE, flags
+                        )
                         if addr != address:
                             raise OSError(
                                 errno.ENOTCONN, os.strerror(errno.ENOTCONN)
@@ -229,10 +235,10 @@ class Dtls:
                     self._buffer.consume_outgoing(amt)
 
                     self._handshake_retries += 1
-                    logging.debug("Retransmission attempt: %s", self._handshake_retries)
+                    logger.debug("Retransmission attempt: %s", self._handshake_retries)
 
                     if self._handshake_retries < 3:
-                        logging.debug("Resending ClientHello")
+                        logger.debug("Resending ClientHello")
                         time.sleep(0.3)
                         if address is None:
                             amt = self._socket.send(in_transit, flags)
@@ -241,4 +247,6 @@ class Dtls:
                         self._buffer.consume_outgoing(amt)
 
                     if self._handshake_retries > 3:
-                        raise DTLSHandshakeException("Maximum handshake retries exceeded") from exc
+                        raise DTLSHandshakeException(
+                            "Maximum handshake retries exceeded"
+                        ) from exc

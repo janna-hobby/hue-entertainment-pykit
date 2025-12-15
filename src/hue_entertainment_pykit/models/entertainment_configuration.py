@@ -36,6 +36,7 @@ class ResourceTypes(Enum):
 
     ENTERTAINMENT = "entertainment"
     LIGHT = "light"
+    DEVICE = "device"
 
 
 class ConfigurationTypes(Enum):
@@ -245,7 +246,8 @@ class EntertainmentConfiguration:
         self.stream_proxy = StreamProxy(
             mode=ProxyMode(proxy_data["mode"]),
             node=StreamProxyNode(
-                rtype=ResourceTypes(proxy_data["node"]["rtype"]), rid=proxy_data["node"]["rid"]
+                rtype=ResourceTypes(proxy_data["node"]["rtype"]),
+                rid=proxy_data["node"]["rid"],
             ),
         )
 
@@ -271,7 +273,8 @@ class EntertainmentConfiguration:
             service_locations=[
                 ServiceLocation(
                     service=ResourceIdentifier(
-                        rid=loc["service"]["rid"], rtype=ResourceTypes(loc["service"]["rtype"])
+                        rid=loc["service"]["rid"],
+                        rtype=ResourceTypes(loc["service"]["rtype"]),
                     ),
                     position=Position(**loc["position"]),
                     positions=[Position(**pos) for pos in loc["positions"]],
@@ -332,7 +335,10 @@ class EntertainmentConfiguration:
             "locations": {
                 "service_locations": [
                     {
-                        "service": {"rtype": loc.service.rtype.value, "rid": loc.service.rid},
+                        "service": {
+                            "rtype": loc.service.rtype.value,
+                            "rid": loc.service.rid,
+                        },
                         "position": asdict(loc.position),
                         "positions": [asdict(pos) for pos in loc.positions],
                         "equalization_factor": loc.equalization_factor,

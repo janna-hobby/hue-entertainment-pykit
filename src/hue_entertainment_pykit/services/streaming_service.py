@@ -12,15 +12,18 @@ import time
 from socket import error as SocketError
 from typing import Union
 
-from models.payload import Payload
-from models.entertainment_configuration import (
+from ..models.payload import Payload
+from ..models.entertainment_configuration import (
     EntertainmentConfiguration,
 )
-from bridge.entertainment_configuration_repository import (
+from ..bridge.entertainment_configuration_repository import (
     EntertainmentConfigurationRepository,
 )
-from network.dtls import Dtls
-from utils.converter import Converter
+from ..network.dtls import Dtls
+from ..utils.converter import Converter
+
+
+logger = logging.getLogger(__name__)
 
 
 # pylint: disable=too-many-instance-attributes
@@ -139,7 +142,7 @@ class StreamingService:
             self._processing_thread.join(timeout=10)
 
             if self._connection_thread.is_alive() or self._processing_thread.is_alive():
-                logging.warning("One or more threads did not terminate as expected.")
+                logger.warning("One or more threads did not terminate as expected.")
 
             self._dtls_service.close_socket()
 
@@ -171,11 +174,11 @@ class StreamingService:
 
         rx, gy, bb, light_id = user_input
         color = rx, gy, bb
-        logging.info("Setting color(%s, %s, %s) on light %s", rx, gy, bb, light_id)
+        logger.info("Setting color(%s, %s, %s) on light %s", rx, gy, bb, light_id)
         if self._is_valid_rgb8(color) or self._is_valid_xyb(color):
             self._input_queue.put(user_input)
         else:
-            logging.error(
+            logger.error(
                 "Invalid input: values must be a valid rgb8 (0 - 255) or xyb (0.0 - 1.0)"
             )
 
@@ -226,13 +229,11 @@ class StreamingService:
 
         while self._is_connection_alive:
             try:
-                self._dtls_service.get_socket().send(
-                    self._last_message
-                )
+                self._dtls_service.get_socket().send(self._last_message)
             except SocketError as e:
-                logging.error("Connection lost: %s", e)
+                logger.error("Connection lost: %s", e)
                 if self._is_connection_alive:
-                    logging.info("Attempting to reconnect...")
+                    logger.info("Attempting to reconnect...")
                     self._attempt_reconnect()
             time.sleep(self._KEEP_ALIVE_INTERVAL)
 
@@ -253,7 +254,7 @@ class StreamingService:
             except queue.Empty:
                 continue
             except ValueError as e:
-                logging.error("Error in user input: %s", e)
+                logger.error("Error in user input: %s", e)
 
     def _attempt_reconnect(self):
         """Attempts to reconnect the DTLS service with a limit of 3 attempts.
@@ -264,7 +265,7 @@ class StreamingService:
 
         with self._reconnect_lock:
             if self._reconnect_attempts >= 3:
-                logging.error(
+                logger.error(
                     "Maximum reconnection attempts reached. Unable to reconnect."
                 )
                 return
@@ -273,17 +274,17 @@ class StreamingService:
                 self._dtls_service.close_socket()
                 self._dtls_service.do_handshake()
                 self._reconnect_attempts = 0
-                logging.info("Reconnected to the DTLS service.")
+                logger.info("Reconnected to the DTLS service.")
             except OSError as e:
                 self._reconnect_attempts += 1
-                logging.error(
+                logger.error(
                     "Failed to reconnect attempt %s due to network error: %s",
                     self._reconnect_attempts,
                     e,
                 )
             except Exception as e:  # pylint: disable=broad-except
                 self._reconnect_attempts += 1
-                logging.error(
+                logger.error(
                     "Failed to reconnect attempt %s due to unexpected error: %s",
                     self._reconnect_attempts,
                     e,
@@ -303,7 +304,7 @@ class StreamingService:
         rx, gy, bb, light_id = user_input
         color = (rx, gy, bb)
         if self._is_valid_rgb8(color) or self._is_valid_xyb(color):
-            logging.debug("Processing user input: %s", color)
+            logger.debug("Processing user input: %s", color)
             self._send_color_to_light(color, light_id)
         else:
             raise ValueError(
@@ -326,15 +327,13 @@ class StreamingService:
         try:
             self._channel_data = self._pack_color_data(color, value)
             message = self._build_message(self._channel_data)
-            logging.debug(message)
-            self._dtls_service.get_socket().send(
-                message
-            )
+            logger.debug(message)
+            self._dtls_service.get_socket().send(message)
             self._last_message = message
         except SocketError as e:
-            logging.error("Error sending message: %s", e)
+            logger.error("Error sending message: %s", e)
             if self._is_connection_alive:
-                logging.info("Attempting to reconnect...")
+                logger.info("Attempting to reconnect...")
                 self._attempt_reconnect()
 
     def _pack_color_data(
@@ -358,7 +357,7 @@ class StreamingService:
         else:
             rx, gy, bb = Converter.rgb8_to_rgb16(color)
 
-        logging.debug("Converted values: %s, %s, %s", rx, gy, bb)
+        logger.debug("Converted values: %s, %s, %s", rx, gy, bb)
         return channel_data + struct.pack(">HHH", rx, gy, bb)
 
     @classmethod

@@ -12,29 +12,30 @@ The module uses several dependencies, including services for MDNS, DTLS (Datagra
 general bridge device management. It is designed to be used in systems where bridge devices and
 their entertainment features need to be dynamically discovered, configured, and controlled.
 """
+
 import logging
 import re
 from typing import Optional, Union
 
-from bridge.bridge_repository import BridgeRepository
-from bridge.entertainment_configuration_repository import (
+from .bridge.bridge_repository import BridgeRepository
+from .bridge.entertainment_configuration_repository import (
     EntertainmentConfigurationRepository,
 )
-from models.bridge import Bridge
-from models.entertainment_configuration import (
+from .models.bridge import Bridge
+from .models.entertainment_configuration import (
     EntertainmentConfiguration,
 )
-from network.dtls import Dtls
-from network.mdns import Mdns
-from services.discovery_service import DiscoveryService
-from services.streaming_service import StreamingService
-from utils.logger import setup_logging
+from .network.dtls import Dtls
+from .network.mdns import Mdns
+from .services.discovery_service import DiscoveryService
+from .services.streaming_service import StreamingService
+from .utils.logger import LoggingUtil
 
 
 def setup_logs(
-        level: int = logging.DEBUG,
-        max_file_size: int = 1024 * 1024 * 5,
-        backup_count: int = 3,
+    level: int = logging.DEBUG,
+    max_file_size: int = 1024 * 1024 * 5,
+    backup_count: int = 3,
 ):
     """
     User-friendly interface to configure the library's logging system with default settings.
@@ -54,19 +55,19 @@ def setup_logs(
         backup_count (int, optional): Number of backup log files to retain. Defaults to 3.
     """
 
-    setup_logging(level, max_file_size, backup_count)
+    LoggingUtil.setup_logging(level, max_file_size, backup_count)
 
 
 # pylint: disable=too-many-positional-arguments
 def create_bridge(
-        identification: str,
-        rid: str,
-        ip_address: str,
-        swversion: int,
-        username: str,
-        hue_app_id: str,
-        clientkey: str,
-        name: str,
+    identification: str,
+    rid: str,
+    ip_address: str,
+    swversion: int,
+    username: str,
+    hue_app_id: str,
+    clientkey: str,
+    name: str,
 ) -> Bridge:
     """
     Creates a new Bridge object with the specified configuration.
@@ -91,7 +92,7 @@ def create_bridge(
     if not isinstance(rid, str):
         raise TypeError("Resource ID must be a string")
     if not isinstance(ip_address, str) or not re.match(
-            r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", ip_address
+        r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", ip_address
     ):
         raise ValueError("Invalid IP address format")
     if not isinstance(swversion, int):
@@ -219,10 +220,10 @@ class Streaming:
     """
 
     def __init__(
-            self,
-            bridge: Bridge,
-            entertainment_configuration: EntertainmentConfiguration,
-            ent_conf_repo: EntertainmentConfigurationRepository,
+        self,
+        bridge: Bridge,
+        entertainment_configuration: EntertainmentConfiguration,
+        ent_conf_repo: EntertainmentConfigurationRepository,
     ):
         """Initializes the Streaming class with bridge and entertainment configuration details."""
 
@@ -250,8 +251,8 @@ class Streaming:
         self._streaming_service.set_color_space(color_space)
 
     def set_input(
-            self,
-            input_data: Union[tuple[int, int, int, int], tuple[float, float, float, int]],
+        self,
+        input_data: Union[tuple[int, int, int, int], tuple[float, float, float, int]],
     ):
         """Sets the input data for the streaming service.
 

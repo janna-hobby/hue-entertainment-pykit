@@ -20,12 +20,14 @@ import logging
 import requests
 from requests import Response
 
-from models.bridge import Bridge
-from models.payload import Payload
-from models.entertainment_configuration import EntertainmentConfiguration
-from exceptions.api_exception import ApiException
+from ..models.bridge import Bridge
+from ..models.payload import Payload
+from ..models.entertainment_configuration import EntertainmentConfiguration
+from ..exceptions.api_exception import ApiException
+from ..utils.status_code import StatusCode
 
-from utils.status_code import StatusCode
+
+logger = logging.getLogger(__name__)
 
 
 class EntertainmentConfigurationRepository:
@@ -54,7 +56,9 @@ class EntertainmentConfigurationRepository:
         """
 
         self._bridge: Bridge = bridge
-        self._base_url: str = f"https://{bridge.get_ip_address()}/clip/v2/resource/entertainment_configuration"
+        self._base_url: str = (
+            f"https://{bridge.get_ip_address()}/clip/v2/resource/entertainment_configuration"
+        )
 
         self._headers: dict[str, str] = {
             "Content-Type": "application/json",
@@ -77,9 +81,9 @@ class EntertainmentConfigurationRepository:
             ApiException: If the response status code indicates an error.
         """
 
-        logging.info("Sending %s request to %s", method, url)
+        logger.info("Sending %s request to %s", method, url)
         if payload:
-            logging.debug("Payload: %s", payload.get_data())
+            logger.debug("Payload: %s", payload.get_data())
         response = requests.request(
             method,
             url,
@@ -103,7 +107,7 @@ class EntertainmentConfigurationRepository:
             each configuration fetched from the Hue Bridge.
         """
 
-        logging.info("Fetching entertainment configurations")
+        logger.info("Fetching entertainment configurations")
         response = self._send_request("GET", self._base_url)
         data = response.json()["data"]
         entertainment_configs = {}
@@ -122,4 +126,4 @@ class EntertainmentConfigurationRepository:
         url = f"{self._base_url}/{payload.get_id()}"
         payload.remove_key("id")
         self._send_request("PUT", url, payload)
-        logging.info("Entertainment configuration updated successfully.")
+        logger.info("Entertainment configuration updated successfully.")
