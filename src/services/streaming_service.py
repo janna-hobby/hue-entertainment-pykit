@@ -133,6 +133,15 @@ class StreamingService:
         """
 
         if self._dtls_service.get_socket() and self._is_connection_alive:
+            
+            payload = (
+                Payload()
+                .set_key_and_or_value("id", self._entertainment_config.id)
+                .set_key_and_or_value("action", "stop")
+            )
+            self._entertainment_configuration_repository.put_configuration(payload)
+            self._dtls_service.close_socket()
+
             self._is_connection_alive = False
 
             self._connection_thread.join(timeout=10)
@@ -141,14 +150,7 @@ class StreamingService:
             if self._connection_thread.is_alive() or self._processing_thread.is_alive():
                 logging.warning("One or more threads did not terminate as expected.")
 
-            self._dtls_service.close_socket()
-
-            payload = (
-                Payload()
-                .set_key_and_or_value("id", self._entertainment_config.id)
-                .set_key_and_or_value("action", "stop")
-            )
-            self._entertainment_configuration_repository.put_configuration(payload)
+            
         else:
             raise SocketError(
                 "Unable to stop stream: DTLS socket is not available or stream is not active."
