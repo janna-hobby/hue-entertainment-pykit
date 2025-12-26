@@ -1,6 +1,5 @@
 # Hue Entertainment PyKit
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/hrdasdominik/hue-entertainment-pykit/python-app.yml?branch=main&label=main)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/hrdasdominik/hue-entertainment-pykit/python-app.yml?branch=dev&label=dev)
 ![GitHub Tag](https://img.shields.io/github/v/tag/hrdasdominik/hue-entertainment-pykit?include_prereleases)
 ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fhrdasdominik%2Fhue-entertainment-pykit%2Fmain%2Fpyproject.toml)
 ![PyPI - Version](https://img.shields.io/pypi/v/hue-entertainment-pykit?link=https%3A%2F%2Fpypi.org%2Fproject%2Fhue-entertainment-pykit%2F)
@@ -14,9 +13,13 @@
 
 Unlock the full spectrum of Philips Hue lighting with the Hue Entertainment PyKit. This Python library simplifies connecting to the Hue Bridge and controlling lights with minimal latency, empowering developers to create dynamic and responsive lighting environments.
 
+---
+
 ## Motivation
 
 Confronted with the complexity of the official Hue EDK and challenges in DTLS handshake implementation which many in the community had, Hue Entertainment PyKit was crafted to provide a straightforward, Python-centric approach to light control using the Philips Hue Entertainment API.
+
+---
 
 ## Quick Start
 
@@ -27,19 +30,25 @@ To install Hue Entertainment PyKit, ensure you have Python installed on your sys
 pip install hue-entertainment-pykit
 ```
 
+__Note:__ Python 3.13 and later are currently unsupported due to ___python-mbedtls___ not yet providing compatible 
+wheels. This sucks cause last update was in second quarter of 2024 and it looks like there won't be any anymore.
+
+---
+
 ## Usage
 
 To interact with your Philips Hue lights you can do:
 
 ### Logging Configuration (Optional)
 
-For an enhanced development experience when utilizing this library, logging capabilities have been integrated:
+Hue Entertainment PyKit configures logging **only for its own logger namespace**
+(`hue_entertainment_pykit.*`). It does not modify the root logger.
 
 ```python
 import logging
 from hue_entertainment_pykit import setup_logs
 
-# Initialize default logging
+# Enable library logging with the default formatter and handlers
 setup_logs()
 
 # Or customize the logging level (e.g., exclude DEBUG messages)
@@ -49,6 +58,35 @@ setup_logs(level=logging.INFO)
 setup_logs(level=logging.INFO, max_file_size=1024 * 1024, backup_count=1)
 
 # Each parameter is optional and comes with predefined default values
+```
+
+To log messages from your own application code in the same format, use a
+named logger under the same namespace:
+
+```python
+import logging
+
+logger = logging.getLogger("hue_entertainment_pykit.example")
+logger.info("Example started")
+```
+
+If you prefer to use logging.info(...) (root logger), configure it separately:
+
+```python
+import logging
+logging.basicConfig(level=logging.INFO)
+```
+
+#### Silencing noisy third-party logs
+
+Some dependencies (e.g. `urllib3`, `zeroconf`) may emit verbose DEBUG logs if
+root logging is enabled. You can reduce noise like this:
+
+```python
+import logging
+
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("zeroconf").setLevel(logging.WARNING)
 ```
 
 ### Discovery (Optional)
